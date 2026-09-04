@@ -82,6 +82,35 @@
             background: #e4ece4;
         }
 
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f0f3f0;
+            padding: 6px 14px;
+            border-radius: 12px;
+        }
+
+        .volume-control .vol-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .volume-control input[type="range"] {
+            width: 100px;
+            accent-color: #2d6b4a;
+            cursor: pointer;
+        }
+
+        .volume-control .vol-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: #4a5a4a;
+            width: 32px;
+            text-align: right;
+        }
+
         .screen {
             display: none;
             animation: fadeSlide 0.3s ease;
@@ -756,6 +785,11 @@
             <button class="tab-btn active" data-tab="editor">Редактор</button>
             <button class="tab-btn" data-tab="player">Вправа</button>
         </div>
+        <div class="volume-control">
+            <span class="vol-icon" id="vol-icon">🔊</span>
+            <input type="range" id="volume-slider" min="0" max="100" value="80">
+            <span class="vol-value" id="vol-value">80%</span>
+        </div>
     </div>
 
     <!-- EDITOR SCREEN -->
@@ -863,6 +897,7 @@
         instrumentLoaded: false,
         soundfont: null,
         activeNotes: new Map(), // For continuous playback
+        volume: 0.8,
         notes: [
             'C4','C#4','D4','D#4','E4','F4','F#4','G4','G#4','A4','A#4','H4',
             'C5','C#5','D5','D#5','E5','F5','F#5','G5','G#5','A5','A#5','H5'
@@ -902,6 +937,9 @@
     const groupCount = $('group-count');
     const playerGroupCount = $('player-group-count');
     const shareNotif = $('share-notification');
+    const volumeSlider = $('volume-slider');
+    const volIcon = $('vol-icon');
+    const volValue = $('vol-value');
 
     const tabBtns = document.querySelectorAll('.tab-btn');
     const screens = {
@@ -917,6 +955,16 @@
             state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
         return state.audioCtx;
+    }
+
+    function getMasterGain() {
+        const ctx = getAudioCtx();
+        if (!state.masterGain) {
+            state.masterGain = ctx.createGain();
+            state.masterGain.gain.value = state.volume;
+            state.masterGain.connect(ctx.destination);
+        }
+        return state.masterGain;
     }
 
     function getSoundfontNote(note) {
@@ -948,7 +996,7 @@
             // Load soundfont instrument
             Soundfont.instrument(ctx, instrumentName, {
                 gain: 0.8,
-                destination: ctx.destination
+                destination: getMasterGain()
             }).then((instrument) => {
                 state.soundfont = instrument;
                 state.instrumentLoaded = true;
@@ -1092,7 +1140,7 @@
         gain.gain.setValueAtTime(0.4, now + 0.1);
         
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(getMasterGain());
         osc.start(now);
         
         return {
@@ -1129,7 +1177,7 @@
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
         
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(getMasterGain());
         osc.start(now);
         osc.stop(now + duration);
     }
@@ -1849,6 +1897,22 @@
     }
 
     // ============================================================
+    // 13.5 VOLUME CONTROL
+    // ============================================================
+    function updateVolumeUI(percent) {
+        volValue.textContent = percent + '%';
+        volIcon.textContent = percent == 0 ? '🔇' : (percent < 50 ? '🔉' : '🔊');
+    }
+
+    function setVolume(percent) {
+        state.volume = percent / 100;
+        if (state.masterGain) {
+            state.masterGain.gain.value = state.volume;
+        }
+        updateVolumeUI(percent);
+    }
+
+    // ============================================================
     // 14. INSTRUMENT SELECTOR
     // ============================================================
     function setInstrument(instrument) {
@@ -1882,7 +1946,27 @@
             state.lines = [];
         }
 
-        renderAll();
+        // Restore saved volume (falls back to the 80% default already in state)
+        try {
+            const savedVolume = localStorage.getItem('vocalTrainerVolume');
+            if (savedVolume !== null) {
+                const v = parseInt(savedVolume, 10);
+                if (!isNaN(v) && v >= 0 && v <= 100) {
+                    state.volume = v / 100;
+                    volumeSlider.value = v;
+                }
+            }
+        } catch (e) {
+            console.warn('Не вдалося прочитати збережену гучність:', e);
+        }
+        updateVolumeUI(volumeSlider.value);
+
+        if (loaded) {
+            // Opened via a share link — jump straight to the exercise screen
+            switchTab('player');
+        } else {
+            renderAll();
+        }
 
         // Auto-load default instrument
         loadInstrument('acoustic_grand_piano').then(() => {
@@ -1890,6 +1974,14 @@
         });
 
         // ---- EVENT LISTENERS ----
+
+        volumeSlider.addEventListener('input', () => {
+            const v = parseInt(volumeSlider.value, 10);
+            setVolume(v);
+            try {
+                localStorage.setItem('vocalTrainerVolume', v);
+            } catch (e) {}
+        });
 
         lyricsInput.addEventListener('input', () => {
             clearTimeout(state.debounceTimer);
@@ -1948,8 +2040,12 @@
         });
 
         window.addEventListener('hashchange', () => {
-            loadFromHash();
-            renderAll();
+            const loadedNow = loadFromHash();
+            if (loadedNow) {
+                switchTab('player');
+            } else {
+                renderAll();
+            }
         });
 
         console.log('🎵 Вокальний тренер ініціалізовано');
