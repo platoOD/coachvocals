@@ -1027,27 +1027,30 @@
     }
 
     function getMasterGain() {
-        const ctx = getAudioCtx();
-        if (!state.masterGain) {
-            state.masterGain = ctx.createGain();
-            state.masterGain.gain.value = state.volume;
+    const ctx = getAudioCtx();
 
-            // Limiter on the output: lets us push gain higher for extra
-            // loudness while smoothly taming peaks instead of hard-clipping
-            // (which sounds like crackle/distortion).
-            const limiter = ctx.createDynamicsCompressor();
-            limiter.threshold.value = -6;   // start limiting a bit below 0dB
-            limiter.knee.value = 6;         // smooth transition into limiting
-            limiter.ratio.value = 12;       // strongly restrain anything past threshold
-            limiter.attack.value = 0.003;   // catch fast transients
-            limiter.release.value = 0.15;   // recover quickly between notes
+    if (!state.masterGain) {
+        state.masterGain = ctx.createGain();
 
-            state.masterGain.connect(limiter);
-            limiter.connect(ctx.destination);
-        }
-        return state.masterGain;
+        // 2x amplification at 100% volume (+6 dB)
+        state.masterGain.gain.value = state.volume * 2.0;
+
+        // Strong limiter to prevent digital clipping
+        const limiter = ctx.createDynamicsCompressor();
+
+        limiter.threshold.value = -3;
+        limiter.knee.value = 5;
+        limiter.ratio.value = 20;
+        limiter.attack.value = 0.001;
+        limiter.release.value = 0.12;
+
+        state.masterGain.connect(limiter);
+        limiter.connect(ctx.destination);
     }
 
+    return state.masterGain;
+    }
+    
     function getSoundfontNote(note) {
         // Convert European H to B for Soundfont
         return state.noteMap[note] || note;
@@ -1987,11 +1990,13 @@
     }
 
     function setVolume(percent) {
-        state.volume = percent / 100;
-        if (state.masterGain) {
-            state.masterGain.gain.value = state.volume;
-        }
-        updateVolumeUI(percent);
+    state.volume = percent / 100;
+
+    if (state.masterGain) {
+        state.masterGain.gain.value = state.volume * 2.0;
+    }
+
+    updateVolumeUI(percent);
     }
 
     // ============================================================
