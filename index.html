@@ -268,6 +268,7 @@
 
         .chip .action-btn.split-btn {
             color: #e67e22;
+            transform: rotate(90deg);
         }
 
         .editor-actions {
@@ -760,7 +761,7 @@
     <!-- EDITOR SCREEN -->
     <div class="screen active" id="editor-screen">
         <div class="editor-section">
-            <label for="lyrics-input">📝 Текст пісні</label>
+            <label for="lyrics-input">Текст пісні</label>
             <textarea id="lyrics-input" placeholder="Поле для тексту пісні"></textarea>
         </div>
 
@@ -774,7 +775,7 @@
             </div>
             <div class="editor-actions">
                 <button class="btn btn-danger btn-sm" id="clear-groups-btn">🗑 Очистити групи</button>
-                <span style="font-size:13px; color:#8a9a8a; margin-left:auto;">⊕ – об'єднати з наступною &nbsp; ✂ – розділити</span>
+                <span style="font-size:13px; color:#8a9a8a; margin-left:auto;">+ – об'єднати з наступною &nbsp; ✂️ – розділити</span>
             </div>
         </div>
     </div>
@@ -841,6 +842,7 @@
 
 <!-- Soundfont library -->
 <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
 
 <script>
 (function() {
@@ -1507,15 +1509,15 @@
                 html += `<div class="chip" data-line="${li}" data-group="${gi}">`;
                 html += `<span class="text">${escapeHtml(displayText)}</span>`;
 
-                const noteDisplay = hasNote ? note.replace('4','').replace('5','') : '𝄞';
+                const noteDisplay = hasNote ? note.replace('4','').replace('5','') : '♩';
                 html += `<button class="note-badge ${hasNote ? 'has-note' : ''}" data-line="${li}" data-group="${gi}" title="${hasNote ? note : 'Вибрати ноту'}">${noteDisplay}</button>`;
 
                 if (!isLastInLine) {
-                    html += `<button class="action-btn merge-btn" data-action="merge" data-line="${li}" data-group="${gi}" title="Об'єднати з наступною групою">⊕</button>`;
+                    html += `<button class="action-btn merge-btn" data-action="merge" data-line="${li}" data-group="${gi}" title="Об'єднати з наступною групою">+</button>`;
                 }
 
                 if (group.words.length > 1) {
-                    html += `<button class="action-btn split-btn" data-action="split" data-line="${li}" data-group="${gi}" title="Відокремити останнє слово">✂</button>`;
+                    html += `<button class="action-btn split-btn" data-action="split" data-line="${li}" data-group="${gi}" title="Відокремити останнє слово">✂️</button>`;
                 }
 
                 html += `</div>`;
@@ -1748,8 +1750,8 @@
         const data = getShareData();
         try {
             const json = JSON.stringify(data);
-            const b64 = btoa(encodeURIComponent(json));
-            return window.location.href.split('#')[0] + '#' + b64;
+            const compressed = LZString.compressToEncodedURIComponent(json);
+            return window.location.href.split('#')[0] + '#z' + compressed;
         } catch (e) {
             console.error('Share error:', e);
             return null;
@@ -1804,7 +1806,14 @@
         const hash = window.location.hash.slice(1);
         if (!hash) return false;
         try {
-            const json = decodeURIComponent(atob(hash));
+            let json;
+            if (hash[0] === 'z') {
+                // New compressed format
+                json = LZString.decompressFromEncodedURIComponent(hash.slice(1));
+            } else {
+                // Legacy plain base64 format (old shared links)
+                json = decodeURIComponent(atob(hash));
+            }
             const data = JSON.parse(json);
             if (data.t !== undefined && data.g !== undefined) {
                 loadShareData(data);
@@ -1869,21 +1878,8 @@
         const loaded = loadFromHash();
 
         if (!loaded) {
-            const defaultText = ``;
-            lyricsInput.value = defaultText;
-            const lines = parseTextToLines(defaultText);
-            state.lines = lines.map(line => {
-                if (isLineEmpty(line)) {
-                    return { groups: [], isEmpty: true };
-                }
-                return {
-                    groups: mergePunctuation(wordsFromLine(line)).map(w => ({
-                        words: [w],
-                        note: null
-                    })),
-                    isEmpty: false
-                };
-            });
+            lyricsInput.value = '';
+            state.lines = [];
         }
 
         renderAll();
