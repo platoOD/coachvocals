@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вокальний тренер</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7f5;
+            color: #1a2a1f;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .app {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d6b4a;
+        }
+
+        .app-title .icon {
+            font-size: 28px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            background: #f0f3f0;
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .tab-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            font-weight: 600;
+            font-size: 14px;
+            color: #4a5a4a;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .tab-btn.active {
+            background: #2d6b4a;
+            color: white;
+            box-shadow: 0 2px 8px rgba(45, 107, 74, 0.25);
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #e4ece4;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeSlide 0.3s ease;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .editor-section {
+            margin-bottom: 20px;
+        }
+
+        .editor-section label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            color: #2d6b4a;
+            margin-bottom: 6px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #dce4dc;
+            border-radius: 14px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: border-color 0.2s;
+            background: #fafcfa;
+            line-height: 1.6;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #2d6b4a;
+            box-shadow: 0 0 0 3px rgba(45, 107, 74, 0.1);
+        }
+
+        .groups-container {
+            margin-top: 16px;
+            border: 2px solid #eaf0ea;
+            border-radius: 16px;
+            padding: 16px;
+            background: #fafcfa;
+            min-height: 80px;
+        }
+
+        .line-group {
+            margin-bottom: 12px;
+        }
+
+        .line-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .line-group.empty-line {
+            height: 28px;
+            margin-bottom: 8px;
+            border-bottom: 2px dashed #dce4dc;
+        }
+
+        .line-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #7a8f7a;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            padding: 4px 0;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            border: 2px solid #dce4dc;
+            border-radius: 30px;
+            padding: 6px 12px 6px 16px;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: default;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .chip .text {
+            white-space: nowrap;
+        }
+
+        .chip .note-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: #eaf0ea;
+            color: #2d6b4a;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            font-family: 'Segoe UI', 'Arial Unicode MS', sans-serif;
+        }
+
+        .chip .note-badge:hover {
+            background: #d4e0d4;
+            transform: scale(1.05);
+        }
+
+        .chip .note-badge.has-note {
+            background: #2d6b4a;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .chip .note-badge.has-note:hover {
+            background: #1f5238;
+        }
+
+        .chip .action-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: #6a8a6a;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .chip .action-btn:hover {
+            background: #e4ece4;
+            color: #2d6b4a;
+            transform: scale(1.1);
+        }
+
+        .chip .action-btn.danger:hover {
+            background: #fde8e8;
+            color: #c0392b;
+        }
+
+        .chip .action-btn.disabled {
+            opacity: 0.25;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .chip .action-btn.merge-btn {
+            color: #2d6b4a;
+        }
+
+        .chip .action-btn.split-btn {
+            color: #e67e22;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #2d6b4a;
+            color: white;
+            box-shadow: 0 2px 8px rgba(45, 107, 74, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #1f5238;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(45, 107, 74, 0.3);
+        }
+
+        .btn-secondary {
+            background: #eaf0ea;
+            color: #2d6b4a;
+        }
+
+        .btn-secondary:hover {
+            background: #dce4dc;
+        }
+
+        .btn-danger {
+            background: #fde8e8;
+            color: #c0392b;
+        }
+
+        .btn-danger:hover {
+            background: #fcd5d5;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e8449;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 13px;
+        }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .popup-overlay.open {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .popup {
+            background: white;
+            border-radius: 24px;
+            padding: 28px 24px 24px;
+            max-width: 440px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.25s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .popup-header h3 {
+            font-size: 18px;
+            color: #1a2a1f;
+        }
+
+        .popup-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #8a9a8a;
+            padding: 0 4px;
+        }
+
+        .popup-close:hover {
+            color: #2d6b4a;
+        }
+
+        .note-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .note-btn {
+            padding: 10px 0;
+            border: 2px solid #dce4dc;
+            border-radius: 10px;
+            background: white;
+            font-weight: 700;
+            font-size: 14px;
+            color: #1a2a1f;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: center;
+        }
+
+        .note-btn:hover {
+            background: #eaf0ea;
+            border-color: #2d6b4a;
+            transform: scale(1.03);
+        }
+
+        .note-btn:active {
+            transform: scale(0.95);
+        }
+
+        .note-btn.selected {
+            background: #2d6b4a;
+            color: white;
+            border-color: #2d6b4a;
+        }
+
+        .popup-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            justify-content: flex-end;
+        }
+
+        .play-btn {
+            background: #f0f3f0;
+            border: none;
+            border-radius: 30px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #2d6b4a;
+            transition: all 0.2s;
+        }
+
+        .play-btn:hover {
+            background: #dce4dc;
+        }
+
+        .empty-state {
+            color: #8a9a8a;
+            text-align: center;
+            padding: 30px 10px;
+            font-size: 15px;
+        }
+
+        .empty-state .big-icon {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        /* Player styles */
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            padding: 12px;
+            background: #f0f3f0;
+            border-radius: 14px;
+        }
+
+        .player-controls label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #2d6b4a;
+        }
+
+        .instrument-btn {
+            padding: 8px 16px;
+            border: 2px solid #dce4dc;
+            border-radius: 30px;
+            background: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .instrument-btn:hover {
+            background: #eaf0ea;
+            border-color: #2d6b4a;
+            transform: scale(1.05);
+        }
+
+        .instrument-btn.active {
+            background: #2d6b4a;
+            border-color: #2d6b4a;
+            color: white;
+            box-shadow: 0 2px 8px rgba(45, 107, 74, 0.25);
+        }
+
+        .instrument-btn .label {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .instrument-btn.loading {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .player-line {
+            margin-bottom: 14px;
+        }
+
+        .player-line:last-child {
+            margin-bottom: 0;
+        }
+
+        .player-line.empty-line {
+            height: 32px;
+            margin-bottom: 8px;
+            border-bottom: 2px dashed #dce4dc;
+        }
+
+        .player-line-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #7a8f7a;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .player-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .player-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #dce4dc;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.1s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            gap: 6px;
+        }
+
+        .player-chip .note-label {
+            font-size: 13px;
+            color: #2d6b4a;
+            font-weight: 700;
+            background: #eaf0ea;
+            padding: 0 8px;
+            border-radius: 12px;
+            line-height: 22px;
+        }
+
+        .player-chip.holding {
+            background: #ffdd57;
+            border-color: #f1c40f;
+            transform: scale(1.03);
+            box-shadow: 0 4px 20px rgba(241, 196, 15, 0.35);
+        }
+
+        .player-chip:active {
+            transform: scale(0.97);
+        }
+
+        .player-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .share-notification {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #2d6b4a;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-weight: 600;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        .share-notification.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .info-badge {
+            display: inline-block;
+            background: #eaf0ea;
+            color: #2d6b4a;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Loading indicator */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #dce4dc;
+            border-top: 2px solid #2d6b4a;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 6px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .app {
+                padding: 16px;
+            }
+
+            .app-title {
+                font-size: 20px;
+            }
+
+            .tab-btn {
+                padding: 6px 14px;
+                font-size: 13px;
+            }
+
+            .chip {
+                padding: 4px 8px 4px 12px;
+                font-size: 14px;
+            }
+
+            .chip .note-badge {
+                width: 30px;
+                height: 30px;
+                font-size: 16px;
+            }
+
+            .chip .action-btn {
+                width: 22px;
+                height: 22px;
+                font-size: 14px;
+            }
+
+            .player-chip {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+
+            .note-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .popup {
+                padding: 20px 16px;
+            }
+
+            .note-btn {
+                padding: 8px 0;
+                font-size: 13px;
+            }
+
+            .instrument-btn {
+                padding: 6px 12px;
+                font-size: 16px;
+            }
+
+            .instrument-btn .label {
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .app-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .tabs {
+                justify-content: center;
+            }
+            .tab-btn {
+                flex: 1;
+                text-align: center;
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .chip {
+                font-size: 13px;
+                padding: 3px 6px 3px 10px;
+            }
+            .note-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .player-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .instrument-btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app" id="app">
+    <div class="app-header">
+        <div class="app-title">
+            <span class="icon">🎵</span>
+            Вокальний тренер
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="editor">Редактор</button>
+            <button class="tab-btn" data-tab="player">Вправа</button>
+        </div>
+    </div>
+
+    <!-- EDITOR SCREEN -->
+    <div class="screen active" id="editor-screen">
+        <div class="editor-section">
+            <label for="lyrics-input">📝 Текст пісні</label>
+            <textarea id="lyrics-input" placeholder="Поле для тексту пісні"></textarea>
+        </div>
+
+        <div class="editor-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:4px;">
+                <label style="margin-bottom:0;">🎼 Групи слів з нотами</label>
+                <span class="info-badge" id="group-count">0 груп</span>
+            </div>
+            <div class="groups-container" id="groups-container">
+                <!-- dynamic -->
+            </div>
+            <div class="editor-actions">
+                <button class="btn btn-danger btn-sm" id="clear-groups-btn">🗑 Очистити групи</button>
+                <span style="font-size:13px; color:#8a9a8a; margin-left:auto;">⊕ – об'єднати з наступною &nbsp; ✂ – розділити</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLAYER SCREEN -->
+    <div class="screen" id="player-screen">
+        <div style="margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <h3 style="font-size:18px; color:#2d6b4a;">🎤 Вправа</h3>
+                <span class="info-badge" id="player-group-count">0 груп</span>
+            </div>
+        </div>
+
+        <!-- Instrument selector -->
+        <div class="player-controls">
+            <label>🎚️ Інструмент:</label>
+            <button class="instrument-btn active" data-instrument="acoustic_grand_piano">
+                🎹 <span class="label">Піаніно</span>
+            </button>
+            <button class="instrument-btn" data-instrument="violin">
+                🎻 <span class="label">Скрипка</span>
+            </button>
+            <button class="instrument-btn" data-instrument="trumpet">
+                🎺 <span class="label">Труба</span>
+            </button>
+            <button class="instrument-btn" data-instrument="acoustic_guitar_steel">
+                🎸 <span class="label">Гітара</span>
+            </button>
+            <button class="instrument-btn" data-instrument="acoustic_bass">
+                𝄢 <span class="label">Контрабас</span>
+            </button>
+            <button class="instrument-btn" data-instrument="sine">
+                〰️ <span class="label">Синус</span>
+            </button>
+        </div>
+
+        <div id="player-container" style="border:2px solid #eaf0ea; border-radius:16px; padding:16px; background:#fafcfa; min-height:80px;">
+            <!-- dynamic -->
+        </div>
+        <div class="player-actions">
+            <button class="btn btn-secondary" id="back-to-editor-btn">← Назад до редактора</button>
+            <button class="btn btn-success" id="share-from-player-btn">🔗 Поділитися</button>
+        </div>
+    </div>
+</div>
+
+<!-- NOTE POPUP -->
+<div class="popup-overlay" id="note-popup">
+    <div class="popup">
+        <div class="popup-header">
+            <h3>🎼 Вибрати ноту</h3>
+            <button class="popup-close" id="popup-close">✕</button>
+        </div>
+        <div class="note-grid" id="note-grid"></div>
+        <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap; justify-content:center;">
+            <button class="play-btn" id="popup-play-note">▶ Програти</button>
+            <button class="play-btn" id="popup-remove-note">✕ Зняти ноту</button>
+        </div>
+    </div>
+</div>
+
+<!-- SHARE NOTIFICATION -->
+<div class="share-notification" id="share-notification">✅ Посилання скопійовано!</div>
+
+<!-- Soundfont library -->
+<script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
+
+<script>
+(function() {
+    'use strict';
+
+    // ============================================================
+    // 1. STATE
+    // ============================================================
+    const state = {
+        lines: [],
+        editing: null,
+        tempNote: null,
+        audioCtx: null,
+        holdingId: null,
+        debounceTimer: null,
+        currentTab: 'editor',
+        instrument: 'acoustic_grand_piano',
+        instrumentLoaded: false,
+        soundfont: null,
+        activeNotes: new Map(), // For continuous playback
+        notes: [
+            'C4','C#4','D4','D#4','E4','F4','F#4','G4','G#4','A4','A#4','H4',
+            'C5','C#5','D5','D#5','E5','F5','F#5','G5','G#5','A5','A#5','H5'
+        ],
+        // Map European H to B for Soundfont
+        noteMap: {
+            'H3': 'B3', 'H4': 'B4', 'H5': 'B5'
+        }
+    };
+
+    // Icon + display label per instrument (used both for the initial buttons
+    // and for refreshing button contents after a soundfont finishes loading)
+    const INSTRUMENTS = {
+        acoustic_grand_piano: { icon: '🎹', label: 'Піаніно' },
+        violin: { icon: '🎻', label: 'Скрипка' },
+        trumpet: { icon: '🎺', label: 'Труба' },
+        acoustic_guitar_steel: { icon: '🎸', label: 'Гітара' },
+        acoustic_bass: { icon: '𝄢', label: 'Контрабас' },
+        sine: { icon: '〰️', label: 'Синус' }
+    };
+
+    // ============================================================
+    // 2. DOM refs
+    // ============================================================
+    const $ = id => document.getElementById(id);
+    const lyricsInput = $('lyrics-input');
+    const groupsContainer = $('groups-container');
+    const playerContainer = $('player-container');
+    const notePopup = $('note-popup');
+    const noteGrid = $('note-grid');
+    const popupClose = $('popup-close');
+    const popupPlayNote = $('popup-play-note');
+    const popupRemoveNote = $('popup-remove-note');
+    const clearGroupsBtn = $('clear-groups-btn');
+    const backToEditorBtn = $('back-to-editor-btn');
+    const shareFromPlayerBtn = $('share-from-player-btn');
+    const groupCount = $('group-count');
+    const playerGroupCount = $('player-group-count');
+    const shareNotif = $('share-notification');
+
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const screens = {
+        editor: $('editor-screen'),
+        player: $('player-screen')
+    };
+
+    // ============================================================
+    // 3. AUDIO ENGINE with Soundfont
+    // ============================================================
+    function getAudioCtx() {
+        if (!state.audioCtx) {
+            state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return state.audioCtx;
+    }
+
+    function getSoundfontNote(note) {
+        // Convert European H to B for Soundfont
+        return state.noteMap[note] || note;
+    }
+
+    // Load instrument
+    function loadInstrument(instrumentName) {
+        return new Promise((resolve, reject) => {
+            const ctx = getAudioCtx();
+            
+            // If it's sine wave, we don't need to load soundfont
+            if (instrumentName === 'sine') {
+                state.instrumentLoaded = true;
+                state.soundfont = null;
+                resolve();
+                return;
+            }
+
+            // Show loading state
+            document.querySelectorAll('.instrument-btn').forEach(btn => {
+                if (btn.dataset.instrument === instrumentName) {
+                    btn.classList.add('loading');
+                    btn.innerHTML = `<span class="loading-spinner"></span> <span class="label">Завантаження...</span>`;
+                }
+            });
+
+            // Load soundfont instrument
+            Soundfont.instrument(ctx, instrumentName, {
+                gain: 0.8,
+                destination: ctx.destination
+            }).then((instrument) => {
+                state.soundfont = instrument;
+                state.instrumentLoaded = true;
+                
+                // Reset button text
+                document.querySelectorAll('.instrument-btn').forEach(btn => {
+                    btn.classList.remove('loading');
+                    if (btn.dataset.instrument === instrumentName) {
+                        const meta = INSTRUMENTS[btn.dataset.instrument] || { icon: '🎵', label: btn.dataset.instrument };
+                        btn.innerHTML = `${meta.icon} <span class="label">${meta.label}</span>`;
+                    }
+                });
+                
+                console.log(`✅ Інструмент "${instrumentName}" завантажено`);
+                resolve();
+            }).catch((err) => {
+                console.error('❌ Помилка завантаження інструменту:', err);
+                // Fallback to sine wave
+                state.soundfont = null;
+                state.instrumentLoaded = true;
+                
+                document.querySelectorAll('.instrument-btn').forEach(btn => {
+                    btn.classList.remove('loading');
+                });
+                
+                reject(err);
+            });
+        });
+    }
+
+    // Max time a note may sound when assigning/previewing it (note badge click,
+    // "▶ Програти" in the popup). Kept comfortably under 1s to leave room for
+    // the release tail, and enforced with a hard stop() below because some
+    // soundfont samples keep ringing past their scheduled "duration".
+    const NOTE_PREVIEW_DURATION = 0.5;
+
+    // FIX: soundfont-player's play() signature is play(note, time, duration, options) —
+    // it is NOT play(note, options). The previous code passed the options object as the
+    // "time" argument, which silently broke (or async-threw) real instrument playback.
+    function playSoundfontNote(noteName, duration = NOTE_PREVIEW_DURATION) {
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        if (state.instrument === 'sine' || !state.soundfont) {
+            // Fallback to oscillator
+            playOscillatorNote(noteName, duration);
+            return;
+        }
+
+        try {
+            const sfNote = getSoundfontNote(noteName);
+            const note = state.soundfont.play(sfNote, 0, duration, {
+                gain: 0.7,
+                release: 0.15
+            });
+            // Hard safety cutoff: some soundfont samples keep ringing past the
+            // scheduled duration/release, so force-stop the voice no later
+            // than 1 second in total regardless.
+            if (note && typeof note.stop === 'function') {
+                const hardStopMs = Math.min(duration * 1000 + 150, 1000);
+                setTimeout(() => {
+                    try { note.stop(); } catch (e) {}
+                }, hardStopMs);
+            }
+            return note;
+        } catch (e) {
+            console.warn('Soundfont playback error, using oscillator:', e);
+            playOscillatorNote(noteName, duration);
+        }
+    }
+
+    function playContinuousSoundfontNote(noteName, groupId) {
+        const ctx = getAudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        stopContinuousNote(groupId);
+
+        if (state.instrument === 'sine' || !state.soundfont) {
+            // Use oscillator for continuous
+            const result = createOscillatorNode(noteName, true);
+            if (result) {
+                state.activeNotes.set(groupId, result);
+            }
+            return;
+        }
+
+        try {
+            const sfNote = getSoundfontNote(noteName);
+            // No fixed duration here — we hold the note open and stop it manually
+            // (via the returned player's .stop()) when the user releases the chip.
+            const note = state.soundfont.play(sfNote, 0, undefined, {
+                gain: 0.6
+            });
+
+            // Store the note object for stopping
+            state.activeNotes.set(groupId, {
+                type: 'soundfont',
+                note: note,
+                stop: () => {
+                    try { note.stop(); } catch (e) {}
+                }
+            });
+        } catch (e) {
+            console.warn('Continuous soundfont error, using oscillator:', e);
+            const result = createOscillatorNode(noteName, true);
+            if (result) {
+                state.activeNotes.set(groupId, result);
+            }
+        }
+    }
+
+    // ============================================================
+    // 4. OSCILLATOR FALLBACK (for sine wave and errors)
+    // ============================================================
+    const noteFreq = {
+        'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56,
+        'E3': 164.81, 'F3': 174.61, 'F#3': 185.00, 'G3': 196.00,
+        'G#3': 207.65, 'A3': 220.00, 'A#3': 233.08, 'H3': 246.94,
+        'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13,
+        'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00,
+        'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'H4': 493.88,
+        'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25,
+        'E5': 659.25, 'F5': 698.46, 'F#5': 739.99, 'G5': 783.99,
+        'G#5': 830.61, 'A5': 880.00, 'A#5': 932.33, 'H5': 987.77
+    };
+
+    function createOscillatorNode(noteName, isContinuous = false) {
+        const ctx = getAudioCtx();
+        const freq = noteFreq[noteName];
+        if (!freq) return null;
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = state.instrument === 'sine' ? 'sine' : 'triangle';
+        osc.frequency.value = freq;
+        
+        const now = ctx.currentTime;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.4, now + 0.01);
+        gain.gain.setValueAtTime(0.4, now + 0.1);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        
+        return {
+            type: 'oscillator',
+            osc: osc,
+            gain: gain,
+            stop: () => {
+                try {
+                    const stopTime = gain.context.currentTime;
+                    gain.gain.setValueAtTime(gain.gain.value, stopTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, stopTime + 0.04);
+                    osc.stop(stopTime + 0.05);
+                } catch (e) {}
+            }
+        };
+    }
+
+    function playOscillatorNote(noteName, duration = 0.6) {
+        const ctx = getAudioCtx();
+        const freq = noteFreq[noteName];
+        if (!freq) return;
+
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = state.instrument === 'sine' ? 'sine' : 'triangle';
+        osc.frequency.value = freq;
+        
+        const now = ctx.currentTime;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.5, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+    }
+
+    // ============================================================
+    // 5. MAIN AUDIO FUNCTIONS
+    // ============================================================
+    // Contrabass is a transposing instrument: written pitch sounds an octave
+    // lower than notated. Our note range (C4-H5) is well above the natural
+    // register of a real double bass, so without this shift the soundfont
+    // samples get stretched way up and lose their character. Shifting playback
+    // down an octave for this instrument only gives it its proper, natural tone.
+    function shiftOctaveDown(noteName) {
+        const match = noteName.match(/^([A-H]#?)(\d)$/);
+        if (!match) return noteName;
+        const [, letter, octave] = match;
+        return `${letter}${parseInt(octave, 10) - 1}`;
+    }
+
+    function getPlaybackNote(noteName) {
+        if (state.instrument === 'acoustic_bass') {
+            return shiftOctaveDown(noteName);
+        }
+        return noteName;
+    }
+
+    function playNote(noteName, duration = NOTE_PREVIEW_DURATION) {
+        const playbackNote = getPlaybackNote(noteName);
+        if (state.instrument === 'sine' || !state.soundfont || !state.instrumentLoaded) {
+            playOscillatorNote(playbackNote, duration);
+        } else {
+            playSoundfontNote(playbackNote, duration);
+        }
+    }
+
+    function startContinuousNote(noteName, groupId) {
+        const playbackNote = getPlaybackNote(noteName);
+        if (state.instrument === 'sine' || !state.soundfont || !state.instrumentLoaded) {
+            const result = createOscillatorNode(playbackNote, true);
+            if (result) {
+                state.activeNotes.set(groupId, result);
+            }
+        } else {
+            playContinuousSoundfontNote(playbackNote, groupId);
+        }
+    }
+
+    function stopContinuousNote(groupId) {
+        const entry = state.activeNotes.get(groupId);
+        if (entry) {
+            entry.stop();
+            state.activeNotes.delete(groupId);
+        }
+    }
+
+    function stopAllContinuous() {
+        for (const [id] of state.activeNotes) {
+            stopContinuousNote(id);
+        }
+        state.holdingId = null;
+    }
+
+    function playNoteOnce(noteName) {
+        playNote(noteName, NOTE_PREVIEW_DURATION);
+    }
+
+    // ============================================================
+    // 6. TEXT PARSING & SMART GROUP PRESERVATION
+    // ============================================================
+    function isCyrillic(char) {
+        return /[\u0400-\u04FF]/.test(char);
+    }
+
+    function isPunctuation(char) {
+        return /[.,!?;:()\-–—«»"']/.test(char);
+    }
+
+    function isWordChar(char) {
+        return isCyrillic(char) || isPunctuation(char);
+    }
+
+    function splitIntoWords(line) {
+        const result = [];
+        let current = '';
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (isWordChar(char)) {
+                current += char;
+            } else {
+                if (current.length > 0 && /[\u0400-\u04FF]/.test(current)) {
+                    result.push(current);
+                }
+                current = '';
+            }
+        }
+        
+        if (current.length > 0 && /[\u0400-\u04FF]/.test(current)) {
+            result.push(current);
+        }
+        
+        return result;
+    }
+
+    function mergePunctuation(words) {
+        const result = [];
+        let current = '';
+        for (const w of words) {
+            if (w.length === 1 && isPunctuation(w)) {
+                if (current.length > 0) {
+                    current += w;
+                } else {
+                    result.push(w);
+                }
+            } else {
+                if (current.length > 0) {
+                    result.push(current);
+                }
+                current = w;
+            }
+        }
+        if (current.length > 0) result.push(current);
+        return result;
+    }
+
+    function parseTextToLines(text) {
+        return text.split('\n');
+    }
+
+    function wordsFromLine(line) {
+        return splitIntoWords(line);
+    }
+
+    function getWordsFromGroups(groups) {
+        return groups.flatMap(g => g.words);
+    }
+
+    function isLineEmpty(line) {
+        return line.trim().length === 0;
+    }
+
+    function rebuildGroupsPreservingNotes(newText) {
+        const newLines = parseTextToLines(newText);
+        
+        if (!state.lines || state.lines.length === 0) {
+            state.lines = newLines.map(line => {
+                if (isLineEmpty(line)) {
+                    return { groups: [], isEmpty: true };
+                }
+                return {
+                    groups: mergePunctuation(wordsFromLine(line)).map(w => ({
+                        words: [w],
+                        note: null
+                    })),
+                    isEmpty: false
+                };
+            });
+            return;
+        }
+
+        const preservedLines = [];
+
+        for (let li = 0; li < newLines.length; li++) {
+            const newLine = newLines[li];
+            
+            if (isLineEmpty(newLine)) {
+                preservedLines.push({ groups: [], isEmpty: true });
+                continue;
+            }
+
+            const newLineWords = mergePunctuation(wordsFromLine(newLine));
+            const existingLine = state.lines[li];
+            let existingGroups = (existingLine && !existingLine.isEmpty) ? existingLine.groups : [];
+            let existingWords = existingGroups.length > 0 ? getWordsFromGroups(existingGroups) : [];
+            
+            if (!existingLine || existingLine.isEmpty || newLineWords.join(' ') !== existingWords.join(' ')) {
+                const newGroups = [];
+                let wordIdx = 0;
+                
+                for (const oldGroup of existingGroups) {
+                    const oldWords = oldGroup.words;
+                    const oldWordCount = oldWords.length;
+                    const possibleMatch = newLineWords.slice(wordIdx, wordIdx + oldWordCount);
+                    
+                    if (possibleMatch.length === oldWordCount && 
+                        possibleMatch.join(' ') === oldWords.join(' ')) {
+                        newGroups.push({
+                            words: oldWords,
+                            note: oldGroup.note
+                        });
+                        wordIdx += oldWordCount;
+                    } else {
+                        const remainingWords = newLineWords.slice(wordIdx);
+                        for (const w of remainingWords) {
+                            let foundNote = null;
+                            for (const oldW of oldWords) {
+                                if (w === oldW && oldWords.indexOf(w) === 0) {
+                                    foundNote = oldGroup.note;
+                                    break;
+                                }
+                            }
+                            newGroups.push({
+                                words: [w],
+                                note: foundNote
+                            });
+                        }
+                        wordIdx = newLineWords.length;
+                        break;
+                    }
+                }
+                
+                if (wordIdx < newLineWords.length) {
+                    const remaining = newLineWords.slice(wordIdx);
+                    for (const w of remaining) {
+                        let foundNote = null;
+                        for (const oldGroup of existingGroups) {
+                            if (oldGroup.words.includes(w) && oldGroup.words.indexOf(w) === 0) {
+                                foundNote = oldGroup.note;
+                                break;
+                            }
+                        }
+                        newGroups.push({
+                            words: [w],
+                            note: foundNote
+                        });
+                    }
+                }
+                
+                preservedLines.push({ groups: newGroups, isEmpty: false });
+            } else {
+                preservedLines.push({
+                    groups: existingGroups.map(g => ({
+                        words: [...g.words],
+                        note: g.note
+                    })),
+                    isEmpty: false
+                });
+            }
+        }
+
+        state.lines = preservedLines;
+    }
+
+    // ============================================================
+    // 7. STATE OPERATIONS
+    // ============================================================
+    function getGroup(lineIdx, groupIdx) {
+        const line = state.lines[lineIdx];
+        if (!line || line.isEmpty) return null;
+        return line.groups[groupIdx] || null;
+    }
+
+    function setGroupNote(lineIdx, groupIdx, note) {
+        const g = getGroup(lineIdx, groupIdx);
+        if (g) {
+            g.note = note;
+            if (note) {
+                playNoteOnce(note);
+            }
+        }
+        renderAll();
+    }
+
+    function mergeGroupWithNext(lineIdx, groupIdx) {
+        const line = state.lines[lineIdx];
+        if (!line || line.isEmpty) return;
+        const groups = line.groups;
+        if (groupIdx < 0 || groupIdx >= groups.length - 1) return;
+
+        const current = groups[groupIdx];
+        const next = groups[groupIdx + 1];
+        if (!current || !next) return;
+
+        const mergedWords = [...current.words, ...next.words];
+        const note = current.note !== null ? current.note : next.note;
+
+        groups.splice(groupIdx, 2, {
+            words: mergedWords,
+            note: note
+        });
+
+        updateTextareaFromState();
+        renderAll();
+    }
+
+    function splitGroup(lineIdx, groupIdx) {
+        const line = state.lines[lineIdx];
+        if (!line || line.isEmpty) return;
+        const group = line.groups[groupIdx];
+        if (!group) return;
+        if (group.words.length <= 1) return;
+
+        const words = group.words;
+        const lastWord = words[words.length - 1];
+        const restWords = words.slice(0, words.length - 1);
+        const note = group.note;
+
+        line.groups.splice(groupIdx, 1, {
+            words: restWords,
+            note: note
+        }, {
+            words: [lastWord],
+            note: null
+        });
+
+        updateTextareaFromState();
+        renderAll();
+    }
+
+    function clearAllGroups() {
+        if (!confirm('Ви впевнені, що хочете очистити всі групи та ноти?')) return;
+        const text = lyricsInput.value;
+        const lines = parseTextToLines(text);
+        state.lines = lines.map(line => {
+            if (isLineEmpty(line)) {
+                return { groups: [], isEmpty: true };
+            }
+            return {
+                groups: mergePunctuation(wordsFromLine(line)).map(w => ({
+                    words: [w],
+                    note: null
+                })),
+                isEmpty: false
+            };
+        });
+        renderAll();
+    }
+
+    function updateTextareaFromState() {
+        const lines = state.lines.map(line => {
+            if (line.isEmpty) return '';
+            return line.groups.flatMap(g => g.words).join(' ');
+        });
+        lyricsInput.value = lines.join('\n');
+    }
+
+    // ============================================================
+    // 8. RENDER
+    // ============================================================
+    function getGroupId(lineIdx, groupIdx) {
+        return `g-${lineIdx}-${groupIdx}`;
+    }
+
+    function renderGroups() {
+        const container = groupsContainer;
+        if (!state.lines.length || state.lines.every(l => l.isEmpty || l.groups.length === 0)) {
+            container.innerHTML = `<div class="empty-state"><span class="big-icon">📝</span>Вставте текст в поле для тексту пісні, щоб створити групи слів</div>`;
+            groupCount.textContent = '0 груп';
+            return;
+        }
+
+        let totalGroups = 0;
+        let html = '';
+        for (let li = 0; li < state.lines.length; li++) {
+            const line = state.lines[li];
+            
+            if (line.isEmpty) {
+                html += `<div class="line-group empty-line"></div>`;
+                continue;
+            }
+            
+            if (!line.groups.length) continue;
+            totalGroups += line.groups.length;
+
+            html += `<div class="line-group">`;
+            html += `<span class="line-label">${li + 1}</span>`;
+            html += `<div class="chips">`;
+
+            for (let gi = 0; gi < line.groups.length; gi++) {
+                const group = line.groups[gi];
+                const words = group.words;
+                const note = group.note;
+                const displayText = words.join(' ');
+                const hasNote = note !== null;
+                const isLastInLine = gi === line.groups.length - 1;
+
+                html += `<div class="chip" data-line="${li}" data-group="${gi}">`;
+                html += `<span class="text">${escapeHtml(displayText)}</span>`;
+
+                const noteDisplay = hasNote ? note.replace('4','').replace('5','') : '𝄞';
+                html += `<button class="note-badge ${hasNote ? 'has-note' : ''}" data-line="${li}" data-group="${gi}" title="${hasNote ? note : 'Вибрати ноту'}">${noteDisplay}</button>`;
+
+                if (!isLastInLine) {
+                    html += `<button class="action-btn merge-btn" data-action="merge" data-line="${li}" data-group="${gi}" title="Об'єднати з наступною групою">⊕</button>`;
+                }
+
+                if (group.words.length > 1) {
+                    html += `<button class="action-btn split-btn" data-action="split" data-line="${li}" data-group="${gi}" title="Відокремити останнє слово">✂</button>`;
+                }
+
+                html += `</div>`;
+            }
+
+            html += `</div></div>`;
+        }
+
+        container.innerHTML = html;
+        groupCount.textContent = `${totalGroups} груп`;
+
+        container.querySelectorAll('.note-badge').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const line = parseInt(btn.dataset.line);
+                const group = parseInt(btn.dataset.group);
+                openNotePopup(line, group);
+            });
+        });
+
+        container.querySelectorAll('[data-action="merge"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const line = parseInt(btn.dataset.line);
+                const group = parseInt(btn.dataset.group);
+                mergeGroupWithNext(line, group);
+            });
+        });
+
+        container.querySelectorAll('[data-action="split"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const line = parseInt(btn.dataset.line);
+                const group = parseInt(btn.dataset.group);
+                splitGroup(line, group);
+            });
+        });
+    }
+
+    function renderPlayer() {
+        const container = playerContainer;
+        if (!state.lines.length || state.lines.every(l => l.isEmpty || l.groups.length === 0)) {
+            container.innerHTML = `<div class="empty-state"><span class="big-icon">🎤</span>Немає груп для тренування. Спочатку створіть групи в редакторі.</div>`;
+            playerGroupCount.textContent = '0 груп';
+            return;
+        }
+
+        let totalGroups = 0;
+        let html = '';
+        for (let li = 0; li < state.lines.length; li++) {
+            const line = state.lines[li];
+            
+            if (line.isEmpty) {
+                html += `<div class="player-line empty-line"></div>`;
+                continue;
+            }
+            
+            if (!line.groups.length) continue;
+            totalGroups += line.groups.length;
+
+            html += `<div class="player-line">`;
+            html += `<span class="player-line-label">${li + 1}</span>`;
+            html += `<div class="player-chips">`;
+
+            for (let gi = 0; gi < line.groups.length; gi++) {
+                const group = line.groups[gi];
+                const words = group.words;
+                const note = group.note;
+                const displayText = words.join(' ');
+                const groupId = getGroupId(li, gi);
+
+                const hasNote = note !== null;
+                const noteDisplay = hasNote ? note.replace('4','').replace('5','') : '—';
+
+                html += `<div class="player-chip" data-group-id="${groupId}" data-line="${li}" data-group="${gi}" data-note="${note || ''}">`;
+                html += `${escapeHtml(displayText)}`;
+                if (hasNote) {
+                    html += `<span class="note-label">${noteDisplay}</span>`;
+                }
+                html += `</div>`;
+            }
+
+            html += `</div></div>`;
+        }
+
+        container.innerHTML = html;
+        playerGroupCount.textContent = `${totalGroups} груп`;
+
+        container.querySelectorAll('.player-chip').forEach(chip => {
+            const note = chip.dataset.note;
+            const groupId = chip.dataset.groupId;
+
+            if (!note) {
+                chip.style.opacity = '0.5';
+                chip.style.cursor = 'not-allowed';
+                chip.title = 'Немає ноти';
+                return;
+            }
+
+            const startHold = (e) => {
+                e.preventDefault();
+                if (state.holdingId === groupId) return;
+                stopAllContinuous();
+                state.holdingId = groupId;
+                chip.classList.add('holding');
+                startContinuousNote(note, groupId);
+            };
+
+            const endHold = (e) => {
+                e.preventDefault();
+                if (state.holdingId === groupId) {
+                    stopContinuousNote(groupId);
+                    chip.classList.remove('holding');
+                    state.holdingId = null;
+                }
+            };
+
+            chip.addEventListener('mousedown', startHold);
+            chip.addEventListener('mouseup', endHold);
+            chip.addEventListener('mouseleave', endHold);
+            chip.addEventListener('touchstart', startHold, { passive: false });
+            chip.addEventListener('touchend', endHold, { passive: false });
+            chip.addEventListener('touchcancel', endHold, { passive: false });
+        });
+    }
+
+    function renderAll() {
+        if (state.currentTab === 'editor') {
+            renderGroups();
+        } else {
+            renderPlayer();
+        }
+    }
+
+    // ============================================================
+    // 9. NOTE POPUP
+    // ============================================================
+    let popupLineIdx = null;
+    let popupGroupIdx = null;
+
+    function openNotePopup(lineIdx, groupIdx) {
+        const group = getGroup(lineIdx, groupIdx);
+        if (!group) return;
+
+        popupLineIdx = lineIdx;
+        popupGroupIdx = groupIdx;
+
+        const currentNote = group.note;
+        state.tempNote = currentNote || null;
+
+        noteGrid.innerHTML = '';
+        state.notes.forEach(n => {
+            const btn = document.createElement('button');
+            btn.className = 'note-btn';
+            if (n === currentNote) btn.classList.add('selected');
+            btn.textContent = n.replace('4','').replace('5','');
+            btn.dataset.note = n;
+            btn.addEventListener('click', () => {
+                state.tempNote = n;
+                saveNoteAndClose();
+            });
+            noteGrid.appendChild(btn);
+        });
+
+        notePopup.classList.add('open');
+    }
+
+    function closeNotePopup() {
+        notePopup.classList.remove('open');
+        popupLineIdx = null;
+        popupGroupIdx = null;
+        state.tempNote = null;
+    }
+
+    function saveNoteAndClose() {
+        if (popupLineIdx === null || popupGroupIdx === null) return;
+        const note = state.tempNote;
+        setGroupNote(popupLineIdx, popupGroupIdx, note);
+        closeNotePopup();
+    }
+
+    function removeNoteAndClose() {
+        if (popupLineIdx === null || popupGroupIdx === null) return;
+        state.tempNote = null;
+        setGroupNote(popupLineIdx, popupGroupIdx, null);
+        closeNotePopup();
+    }
+
+    function playTempNote() {
+        if (state.tempNote) {
+            playNoteOnce(state.tempNote);
+        }
+    }
+
+    // ============================================================
+    // 10. SHARE
+    // ============================================================
+    function getShareData() {
+        const text = lyricsInput.value;
+        return {
+            t: text,
+            g: state.lines.map(line => {
+                if (line.isEmpty) return null;
+                return line.groups.map(g => ({
+                    w: g.words,
+                    n: g.note
+                }));
+            })
+        };
+    }
+
+    function loadShareData(data) {
+        lyricsInput.value = data.t;
+        state.lines = data.g.map(lineData => {
+            if (lineData === null) {
+                return { groups: [], isEmpty: true };
+            }
+            return {
+                groups: lineData.map(g => ({
+                    words: g.w,
+                    note: g.n
+                })),
+                isEmpty: false
+            };
+        });
+        renderAll();
+    }
+
+    function generateShareUrl() {
+        const data = getShareData();
+        try {
+            const json = JSON.stringify(data);
+            const b64 = btoa(encodeURIComponent(json));
+            return window.location.href.split('#')[0] + '#' + b64;
+        } catch (e) {
+            console.error('Share error:', e);
+            return null;
+        }
+    }
+
+    function shareFromPlayer() {
+        const url = generateShareUrl();
+        if (!url) {
+            alert('Помилка створення посилання');
+            return;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => {
+                showNotification('✅ Посилання скопійовано!');
+            }).catch(() => {
+                fallbackCopy(url);
+            });
+        } else {
+            fallbackCopy(url);
+        }
+    }
+
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            showNotification('✅ Посилання скопійовано!');
+        } catch (e) {
+            prompt('Скопіюйте посилання вручну:', text);
+        }
+        document.body.removeChild(ta);
+    }
+
+    function showNotification(msg) {
+        shareNotif.textContent = msg;
+        shareNotif.classList.add('show');
+        clearTimeout(shareNotif._hideTimer);
+        shareNotif._hideTimer = setTimeout(() => {
+            shareNotif.classList.remove('show');
+        }, 3000);
+    }
+
+    // ============================================================
+    // 11. URL HASH LOADING
+    // ============================================================
+    function loadFromHash() {
+        const hash = window.location.hash.slice(1);
+        if (!hash) return false;
+        try {
+            const json = decodeURIComponent(atob(hash));
+            const data = JSON.parse(json);
+            if (data.t !== undefined && data.g !== undefined) {
+                loadShareData(data);
+                return true;
+            }
+        } catch (e) {
+            console.warn('Failed to load from hash:', e);
+        }
+        return false;
+    }
+
+    // ============================================================
+    // 12. UTILITY
+    // ============================================================
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ============================================================
+    // 13. TAB SWITCHING
+    // ============================================================
+    function switchTab(tabName) {
+        state.currentTab = tabName;
+        tabBtns.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabName);
+        });
+        Object.keys(screens).forEach(key => {
+            screens[key].classList.toggle('active', key === tabName);
+        });
+        renderAll();
+    }
+
+    // ============================================================
+    // 14. INSTRUMENT SELECTOR
+    // ============================================================
+    function setInstrument(instrument) {
+        if (instrument === state.instrument && state.instrumentLoaded) return;
+        
+        state.instrument = instrument;
+        state.instrumentLoaded = false;
+        stopAllContinuous();
+        
+        // Update UI
+        document.querySelectorAll('.instrument-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.instrument === instrument);
+        });
+        
+        // Load instrument
+        loadInstrument(instrument).then(() => {
+            console.log(`✅ Інструмент "${instrument}" готовий до використання`);
+        }).catch(() => {
+            console.warn(`⚠️ Використовується синтезований звук для "${instrument}"`);
+        });
+    }
+
+    // ============================================================
+    // 15. INIT
+    // ============================================================
+    function init() {
+        const loaded = loadFromHash();
+
+        if (!loaded) {
+            const defaultText = ``;
+            lyricsInput.value = defaultText;
+            const lines = parseTextToLines(defaultText);
+            state.lines = lines.map(line => {
+                if (isLineEmpty(line)) {
+                    return { groups: [], isEmpty: true };
+                }
+                return {
+                    groups: mergePunctuation(wordsFromLine(line)).map(w => ({
+                        words: [w],
+                        note: null
+                    })),
+                    isEmpty: false
+                };
+            });
+        }
+
+        renderAll();
+
+        // Auto-load default instrument
+        loadInstrument('acoustic_grand_piano').then(() => {
+            console.log('✅ Піаніно завантажено');
+        });
+
+        // ---- EVENT LISTENERS ----
+
+        lyricsInput.addEventListener('input', () => {
+            clearTimeout(state.debounceTimer);
+            state.debounceTimer = setTimeout(() => {
+                const newText = lyricsInput.value;
+                const newLines = parseTextToLines(newText);
+                
+                const currentText = state.lines.map(line => {
+                    if (line.isEmpty) return '';
+                    return line.groups.flatMap(g => g.words).join(' ');
+                }).join('\n');
+                
+                if (newText.trim() !== currentText.trim()) {
+                    rebuildGroupsPreservingNotes(newText);
+                    renderAll();
+                }
+            }, 300);
+        });
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchTab(btn.dataset.tab);
+            });
+        });
+
+        clearGroupsBtn.addEventListener('click', clearAllGroups);
+        backToEditorBtn.addEventListener('click', () => {
+            switchTab('editor');
+        });
+        shareFromPlayerBtn.addEventListener('click', shareFromPlayer);
+
+        popupClose.addEventListener('click', closeNotePopup);
+        popupRemoveNote.addEventListener('click', removeNoteAndClose);
+        popupPlayNote.addEventListener('click', playTempNote);
+
+        notePopup.addEventListener('click', (e) => {
+            if (e.target === notePopup) closeNotePopup();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeNotePopup();
+        });
+
+        // Instrument selector
+        document.querySelectorAll('.instrument-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setInstrument(btn.dataset.instrument);
+            });
+        });
+
+        window.addEventListener('beforeunload', () => {
+            stopAllContinuous();
+            if (state.audioCtx) {
+                state.audioCtx.close();
+            }
+        });
+
+        window.addEventListener('hashchange', () => {
+            loadFromHash();
+            renderAll();
+        });
+
+        console.log('🎵 Вокальний тренер ініціалізовано');
+        console.log('📊 Груп:', state.lines.reduce((acc, l) => acc + (l.isEmpty ? 0 : l.groups.length), 0));
+        console.log('🎹 Поточний інструмент:', state.instrument);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+})();
+</script>
+
+</body>
+</html>
