@@ -1033,7 +1033,7 @@
         state.masterGain = ctx.createGain();
 
         // 2x amplification at 100% volume (+6 dB)
-        state.masterGain.gain.value = state.volume * 8.0;
+        state.masterGain.gain.value = state.volume * 15.0;
 
         // Strong limiter to prevent digital clipping
         const limiter = ctx.createDynamicsCompressor();
@@ -1993,7 +1993,7 @@
     state.volume = percent / 100;
 
     if (state.masterGain) {
-        state.masterGain.gain.value = state.volume * 8.0;
+        state.masterGain.gain.value = state.volume * 15.0;
     }
 
     updateVolumeUI(percent);
