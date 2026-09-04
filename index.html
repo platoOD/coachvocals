@@ -1031,7 +1031,19 @@
         if (!state.masterGain) {
             state.masterGain = ctx.createGain();
             state.masterGain.gain.value = state.volume;
-            state.masterGain.connect(ctx.destination);
+
+            // Limiter on the output: lets us push gain higher for extra
+            // loudness while smoothly taming peaks instead of hard-clipping
+            // (which sounds like crackle/distortion).
+            const limiter = ctx.createDynamicsCompressor();
+            limiter.threshold.value = -6;   // start limiting a bit below 0dB
+            limiter.knee.value = 6;         // smooth transition into limiting
+            limiter.ratio.value = 12;       // strongly restrain anything past threshold
+            limiter.attack.value = 0.003;   // catch fast transients
+            limiter.release.value = 0.15;   // recover quickly between notes
+
+            state.masterGain.connect(limiter);
+            limiter.connect(ctx.destination);
         }
         return state.masterGain;
     }
@@ -1064,7 +1076,7 @@
 
             // Load soundfont instrument
             Soundfont.instrument(ctx, instrumentName, {
-                gain: 1.2,
+                gain: 1.6,
                 destination: getMasterGain()
             }).then((instrument) => {
                 state.soundfont = instrument;
@@ -1118,7 +1130,7 @@
         try {
             const sfNote = getSoundfontNote(noteName);
             const note = state.soundfont.play(sfNote, 0, duration, {
-                gain: 1.0,
+                gain: 1.4,
                 release: 0.15
             });
             // Hard safety cutoff: some soundfont samples keep ringing past the
@@ -1157,7 +1169,7 @@
             // No fixed duration here — we hold the note open and stop it manually
             // (via the returned player's .stop()) when the user releases the chip.
             const note = state.soundfont.play(sfNote, 0, undefined, {
-                gain: 0.85
+                gain: 1.2
             });
 
             // Store the note object for stopping
@@ -1205,8 +1217,8 @@
         
         const now = ctx.currentTime;
         gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.6, now + 0.01);
-        gain.gain.setValueAtTime(0.6, now + 0.1);
+        gain.gain.linearRampToValueAtTime(0.9, now + 0.01);
+        gain.gain.setValueAtTime(0.9, now + 0.1);
         
         osc.connect(gain);
         gain.connect(getMasterGain());
@@ -1242,7 +1254,7 @@
         
         const now = ctx.currentTime;
         gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.75, now + 0.01);
+        gain.gain.linearRampToValueAtTime(1.0, now + 0.01);
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
         
         osc.connect(gain);
