@@ -111,6 +111,65 @@
             text-align: right;
         }
 
+        .note-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5a4a;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: #dce4dc;
+            border-radius: 22px;
+            transition: background 0.2s ease;
+        }
+
+        .toggle-slider::before {
+            content: "";
+            position: absolute;
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            top: 3px;
+            background: #ffffff;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: #2d6b4a;
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(16px);
+        }
+
+        /* Notes are hidden by default in the "Вправа" screen until toggled on */
+        #player-container:not(.notes-visible) .note-label {
+            display: none;
+        }
+
         .screen {
             display: none;
             animation: fadeSlide 0.3s ease;
@@ -787,7 +846,7 @@
         </div>
         <div class="volume-control">
             <span class="vol-icon" id="vol-icon">🔊</span>
-            <input type="range" id="volume-slider" min="0" max="100" value="80">
+            <input type="range" id="volume-slider" min="0" max="100" value="100">
             <span class="vol-value" id="vol-value">80%</span>
         </div>
     </div>
@@ -819,13 +878,22 @@
         <div style="margin-bottom:12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                 <h3 style="font-size:18px; color:#2d6b4a;">🎤 Вправа</h3>
-                <span class="info-badge" id="player-group-count">0 груп</span>
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <label class="note-toggle-label" for="toggle-notes">
+                        <span class="toggle-switch">
+                            <input type="checkbox" id="toggle-notes">
+                            <span class="toggle-slider"></span>
+                        </span>
+                        Показати ноти
+                    </label>
+                    <span class="info-badge" id="player-group-count">0 груп</span>
+                </div>
             </div>
         </div>
 
         <!-- Instrument selector -->
         <div class="player-controls">
-            <label>🎚️ Інструмент:</label>
+            <label>Інструмент:</label>
             <button class="instrument-btn active" data-instrument="acoustic_grand_piano">
                 🎹 <span class="label">Піаніно</span>
             </button>
@@ -897,7 +965,7 @@
         instrumentLoaded: false,
         soundfont: null,
         activeNotes: new Map(), // For continuous playback
-        volume: 0.8,
+        volume: 1.0,
         notes: [
             'C4','C#4','D4','D#4','E4','F4','F#4','G4','G#4','A4','A#4','H4',
             'C5','C#5','D5','D#5','E5','F5','F#5','G5','G#5','A5','A#5','H5'
@@ -940,6 +1008,7 @@
     const volumeSlider = $('volume-slider');
     const volIcon = $('vol-icon');
     const volValue = $('vol-value');
+    const toggleNotes = $('toggle-notes');
 
     const tabBtns = document.querySelectorAll('.tab-btn');
     const screens = {
@@ -995,7 +1064,7 @@
 
             // Load soundfont instrument
             Soundfont.instrument(ctx, instrumentName, {
-                gain: 0.8,
+                gain: 1.2,
                 destination: getMasterGain()
             }).then((instrument) => {
                 state.soundfont = instrument;
@@ -1049,7 +1118,7 @@
         try {
             const sfNote = getSoundfontNote(noteName);
             const note = state.soundfont.play(sfNote, 0, duration, {
-                gain: 0.7,
+                gain: 1.0,
                 release: 0.15
             });
             // Hard safety cutoff: some soundfont samples keep ringing past the
@@ -1088,7 +1157,7 @@
             // No fixed duration here — we hold the note open and stop it manually
             // (via the returned player's .stop()) when the user releases the chip.
             const note = state.soundfont.play(sfNote, 0, undefined, {
-                gain: 0.6
+                gain: 0.85
             });
 
             // Store the note object for stopping
@@ -1136,8 +1205,8 @@
         
         const now = ctx.currentTime;
         gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.4, now + 0.01);
-        gain.gain.setValueAtTime(0.4, now + 0.1);
+        gain.gain.linearRampToValueAtTime(0.6, now + 0.01);
+        gain.gain.setValueAtTime(0.6, now + 0.1);
         
         osc.connect(gain);
         gain.connect(getMasterGain());
@@ -1173,7 +1242,7 @@
         
         const now = ctx.currentTime;
         gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.5, now + 0.01);
+        gain.gain.linearRampToValueAtTime(0.75, now + 0.01);
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
         
         osc.connect(gain);
@@ -1901,7 +1970,8 @@
     // ============================================================
     function updateVolumeUI(percent) {
         volValue.textContent = percent + '%';
-        volIcon.textContent = percent == 0 ? '🔇' : (percent < 50 ? '🔉' : '🔊');
+        const max = parseInt(volumeSlider.max, 10) || 100;
+        volIcon.textContent = percent == 0 ? '🔇' : (percent < max / 2 ? '🔉' : '🔊');
     }
 
     function setVolume(percent) {
@@ -1981,6 +2051,10 @@
             try {
                 localStorage.setItem('vocalTrainerVolume', v);
             } catch (e) {}
+        });
+
+        toggleNotes.addEventListener('change', () => {
+            playerContainer.classList.toggle('notes-visible', toggleNotes.checked);
         });
 
         lyricsInput.addEventListener('input', () => {
