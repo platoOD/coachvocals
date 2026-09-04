@@ -846,7 +846,7 @@
         </div>
         <div class="volume-control">
             <span class="vol-icon" id="vol-icon">🔊</span>
-            <input type="range" id="volume-slider" min="0" max="100" value="100">
+            <input type="range" id="volume-slider" min="0" max="100" value="80">
             <span class="vol-value" id="vol-value">80%</span>
         </div>
     </div>
@@ -1033,7 +1033,7 @@
         state.masterGain = ctx.createGain();
 
         // 2x amplification at 100% volume (+6 dB)
-        state.masterGain.gain.value = state.volume * 15.0;
+        state.masterGain.gain.value = state.volume * 20.0;
 
         // Strong limiter to prevent digital clipping
         const limiter = ctx.createDynamicsCompressor();
@@ -1993,7 +1993,7 @@
     state.volume = percent / 100;
 
     if (state.masterGain) {
-        state.masterGain.gain.value = state.volume * 15.0;
+        state.masterGain.gain.value = state.volume * 20.0;
     }
 
     updateVolumeUI(percent);
