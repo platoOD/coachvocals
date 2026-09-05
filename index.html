@@ -355,19 +355,24 @@
         .chip {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             background: var(--glass);
             border: 1px solid var(--glass-border);
             border-radius: 30px;
-            padding: 6px 12px 6px 16px;
+            padding: 4px 8px 4px 12px;
             font-size: 15px;
             font-weight: 500;
             color: var(--text-hi);
             transition: all 0.2s ease;
-            cursor: default;
+            cursor: pointer;
             position: relative;
             backdrop-filter: blur(8px);
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .chip:hover {
+            border-color: var(--accent);
+            background: var(--glass-hover);
         }
 
         .chip .text {
@@ -375,13 +380,13 @@
         }
 
         .chip .note-badge {
-            width: 34px;
-            height: 34px;
+            width: 17px;
+            height: 17px;
             border-radius: 50%;
             border: 1px solid var(--glass-border);
             background: rgba(255, 255, 255, 0.05);
             color: var(--text-mid);
-            font-size: 16px;
+            font-size: 9px;
             font-weight: 700;
             cursor: pointer;
             display: flex;
@@ -402,7 +407,7 @@
             background: var(--accent-soft);
             border-color: var(--accent);
             color: var(--accent);
-            font-size: 14px;
+            font-size: 9px;
             font-weight: 700;
             box-shadow: 0 0 12px rgba(52, 229, 192, 0.25);
         }
@@ -896,14 +901,14 @@
             }
 
             .chip {
-                padding: 4px 8px 4px 12px;
+                padding: 3px 6px 3px 10px;
                 font-size: 14px;
             }
 
             .chip .note-badge {
-                width: 30px;
-                height: 30px;
-                font-size: 16px;
+                width: 15px;
+                height: 15px;
+                font-size: 8px;
             }
 
             .chip .action-btn {
@@ -1012,7 +1017,7 @@
             </div>
             <div class="editor-actions">
                 <button class="btn btn-secondary btn-sm" id="clear-groups-btn">🗑 Очистити групи</button>
-                <span style="font-size:13px; color:var(--text-low); margin-left:auto;">+ – об'єднати з наступною &nbsp; ✂️ – розділити</span>
+                <span style="font-size:13px; color:var(--text-low); margin-left:auto;">Тап на слово – призначити ноту &nbsp; + – об'єднати з наступною &nbsp; ✂️ – розділити</span>
             </div>
         </div>
     </div>
@@ -1785,7 +1790,7 @@
                 html += `<span class="text">${escapeHtml(displayText)}</span>`;
 
                 const noteDisplay = hasNote ? note.replace(/\d/, '') : '♩';
-                html += `<button class="note-badge ${hasNote ? 'has-note' : ''}" data-line="${li}" data-group="${gi}" title="${hasNote ? note : 'Вибрати ноту'}">${noteDisplay}</button>`;
+                html += `<span class="note-badge ${hasNote ? 'has-note' : ''}" title="${hasNote ? note : 'Тап на слово, щоб вибрати ноту'}">${noteDisplay}</span>`;
 
                 if (!isLastInLine) {
                     html += `<button class="action-btn merge-btn" data-action="merge" data-line="${li}" data-group="${gi}" title="Об'єднати з наступною групою">+</button>`;
@@ -1804,11 +1809,11 @@
         container.innerHTML = html;
         groupCount.textContent = `${totalGroups} груп`;
 
-        container.querySelectorAll('.note-badge').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const line = parseInt(btn.dataset.line);
-                const group = parseInt(btn.dataset.group);
+        container.querySelectorAll('.chip').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                if (e.target.closest('.action-btn')) return;
+                const line = parseInt(chip.dataset.line);
+                const group = parseInt(chip.dataset.group);
                 openNotePopup(line, group);
             });
         });
