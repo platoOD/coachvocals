@@ -321,27 +321,113 @@
             min-height: 80px;
         }
 
-        .line-group {
-            margin-bottom: 12px;
-        }
-
-        .line-group:last-child {
-            margin-bottom: 0;
-        }
-
-        .line-group.empty-line {
-            height: 28px;
-            margin-bottom: 8px;
+        .line-block-empty {
+            height: 22px;
+            margin-bottom: 10px;
             border-bottom: 1px dashed var(--glass-border-strong);
         }
 
-        .line-label {
+        .line-block {
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.025);
+            margin-bottom: 10px;
+            overflow: hidden;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .line-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .line-block-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .line-block-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .line-block .collapse-toggle {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            border: none;
+            background: transparent;
+            color: var(--text-mid);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+            pointer-events: none;
+        }
+
+        .line-block.collapsed .collapse-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .line-block .line-number {
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text-low);
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
+            background: var(--glass-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 2px 8px;
+            flex-shrink: 0;
+        }
+
+        .line-block .line-preview {
+            display: none;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            color: var(--text-mid);
+            font-size: 14px;
+        }
+
+        .line-block.collapsed .line-preview {
             display: block;
+        }
+
+        .line-block-body {
+            padding: 0 14px 14px;
+        }
+
+        .line-block.collapsed .line-block-body {
+            display: none;
+        }
+
+        .line-text-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-hi);
+            font-family: inherit;
+            font-size: 14px;
+            margin-bottom: 10px;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+
+        .line-text-input::placeholder {
+            color: var(--text-low);
+        }
+
+        .line-text-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+            background: rgba(255, 255, 255, 0.06);
         }
 
         .chips {
@@ -917,6 +1003,20 @@
                 font-size: 14px;
             }
 
+            .line-block-header {
+                padding: 8px 10px;
+                gap: 8px;
+            }
+
+            .line-block-body {
+                padding: 0 10px 10px;
+            }
+
+            .line-text-input {
+                font-size: 13px;
+                padding: 7px 10px;
+            }
+
             .player-chip {
                 padding: 6px 12px;
                 font-size: 14px;
@@ -1017,7 +1117,7 @@
             </div>
             <div class="editor-actions">
                 <button class="btn btn-secondary btn-sm" id="clear-groups-btn">🗑 Очистити групи</button>
-                <span style="font-size:13px; color:var(--text-low); margin-left:auto;">Тап на слово – призначити ноту &nbsp; + – об'єднати з наступною &nbsp; ✂️ – розділити</span>
+                <span style="font-size:13px; color:var(--text-low); margin-left:auto;">Тап на слово – призначити ноту &nbsp; + – об'єднати &nbsp; ✂️ – розділити &nbsp; Тап на рядок – згорнути/розгорнути</span>
             </div>
         </div>
     </div>
@@ -1483,6 +1583,53 @@
         return /[\u0400-\u04FF]/.test(char);
     }
 
+    // Cleans pasted/entered song text.
+    //
+    // Chord lines usually contain Latin note names (E, H, F#, G#m, Bb, etc.)
+    // and spacing/other chord symbols. Since the lyrics themselves are expected
+    // to be Cyrillic, keep only Cyrillic text, spaces and song punctuation.
+    // A line that contains no Cyrillic characters (for example "E   H   F#"
+    // or "Chorus:") becomes an empty line. Original empty lines are kept.
+    function cleanLyricsLine(line) {
+        // First remove Latin letters. This also removes chord names embedded
+        // among spaces, leaving their #/b/m/etc. behind temporarily.
+        let cleaned = line.replace(/[A-Za-z]/g, '');
+
+        // Keep only Cyrillic characters, whitespace and punctuation that can
+        // legitimately belong to the lyrics. This removes chord leftovers
+        // such as #, ♭, digits, slashes and other formatting characters.
+        cleaned = cleaned.replace(/[^\u0400-\u04FF\s.,!?;:()\-–—«»"']/g, '');
+
+        // If there is no actual Cyrillic lyric text, discard the whole line.
+        // This removes chord-only lines and headings such as "Chorus:" while
+        // preserving genuinely empty lines between sections.
+        if (!/[\u0400-\u04FF]/.test(cleaned)) {
+            return '';
+        }
+
+        // Normalize excessive whitespace introduced by chord columns.
+        return cleaned.replace(/[ \t]+/g, ' ').trim();
+    }
+
+    function cleanLyricsText(text) {
+        // Keep genuinely empty lines, but REMOVE non-empty lines that turn into
+        // nothing after cleaning (chord-only lines, "Chorus:", etc.). This is
+        // important: a chord line must not accidentally become an extra blank
+        // line, while blank lines intentionally used between song sections stay.
+        return text.split('\n')
+            .filter(line => {
+                if (line.trim() === '') return true;
+                return cleanLyricsLine(line) !== '';
+            })
+            .map(cleanLyricsLine)
+            .join('\n');
+    }
+
+    // Backward-compatible alias used by the live input handlers.
+    function removeLatin(text) {
+        return cleanLyricsText(text);
+    }
+
     function isPunctuation(char) {
         return /[.,!?;:()\-–—«»"']/.test(char);
     }
@@ -1551,82 +1698,36 @@
         return line.trim().length === 0;
     }
 
-    function rebuildGroupsPreservingNotes(newText) {
-        const newLines = parseTextToLines(newText);
-        
-        if (!state.lines || state.lines.length === 0) {
-            state.lines = newLines.map(line => {
-                if (isLineEmpty(line)) {
-                    return { groups: [], isEmpty: true };
-                }
-                return {
-                    groups: mergePunctuation(wordsFromLine(line)).map(w => ({
-                        words: [w],
-                        note: null
-                    })),
-                    isEmpty: false
-                };
-            });
-            return;
-        }
+    // Computes the groups for a single line's text, reusing notes from the
+    // previous groups of that same line wherever the words still line up.
+    // Shared by the full-text rebuild below and by single-line edits made
+    // directly inside a line block's own text field.
+    function computeGroupsForLineText(newLineText, existingGroups) {
+        const newLineWords = mergePunctuation(wordsFromLine(newLineText));
+        const existingWords = existingGroups.length > 0 ? getWordsFromGroups(existingGroups) : [];
 
-        const preservedLines = [];
+        if (existingGroups.length === 0 || newLineWords.join(' ') !== existingWords.join(' ')) {
+            const newGroups = [];
+            let wordIdx = 0;
 
-        for (let li = 0; li < newLines.length; li++) {
-            const newLine = newLines[li];
-            
-            if (isLineEmpty(newLine)) {
-                preservedLines.push({ groups: [], isEmpty: true });
-                continue;
-            }
+            for (const oldGroup of existingGroups) {
+                const oldWords = oldGroup.words;
+                const oldWordCount = oldWords.length;
+                const possibleMatch = newLineWords.slice(wordIdx, wordIdx + oldWordCount);
 
-            const newLineWords = mergePunctuation(wordsFromLine(newLine));
-            const existingLine = state.lines[li];
-            let existingGroups = (existingLine && !existingLine.isEmpty) ? existingLine.groups : [];
-            let existingWords = existingGroups.length > 0 ? getWordsFromGroups(existingGroups) : [];
-            
-            if (!existingLine || existingLine.isEmpty || newLineWords.join(' ') !== existingWords.join(' ')) {
-                const newGroups = [];
-                let wordIdx = 0;
-                
-                for (const oldGroup of existingGroups) {
-                    const oldWords = oldGroup.words;
-                    const oldWordCount = oldWords.length;
-                    const possibleMatch = newLineWords.slice(wordIdx, wordIdx + oldWordCount);
-                    
-                    if (possibleMatch.length === oldWordCount && 
-                        possibleMatch.join(' ') === oldWords.join(' ')) {
-                        newGroups.push({
-                            words: oldWords,
-                            note: oldGroup.note
-                        });
-                        wordIdx += oldWordCount;
-                    } else {
-                        const remainingWords = newLineWords.slice(wordIdx);
-                        for (const w of remainingWords) {
-                            let foundNote = null;
-                            for (const oldW of oldWords) {
-                                if (w === oldW && oldWords.indexOf(w) === 0) {
-                                    foundNote = oldGroup.note;
-                                    break;
-                                }
-                            }
-                            newGroups.push({
-                                words: [w],
-                                note: foundNote
-                            });
-                        }
-                        wordIdx = newLineWords.length;
-                        break;
-                    }
-                }
-                
-                if (wordIdx < newLineWords.length) {
-                    const remaining = newLineWords.slice(wordIdx);
-                    for (const w of remaining) {
+                if (possibleMatch.length === oldWordCount &&
+                    possibleMatch.join(' ') === oldWords.join(' ')) {
+                    newGroups.push({
+                        words: oldWords,
+                        note: oldGroup.note
+                    });
+                    wordIdx += oldWordCount;
+                } else {
+                    const remainingWords = newLineWords.slice(wordIdx);
+                    for (const w of remainingWords) {
                         let foundNote = null;
-                        for (const oldGroup of existingGroups) {
-                            if (oldGroup.words.includes(w) && oldGroup.words.indexOf(w) === 0) {
+                        for (const oldW of oldWords) {
+                            if (w === oldW && oldWords.indexOf(w) === 0) {
                                 foundNote = oldGroup.note;
                                 break;
                             }
@@ -1636,21 +1737,209 @@
                             note: foundNote
                         });
                     }
+                    wordIdx = newLineWords.length;
+                    break;
                 }
-                
-                preservedLines.push({ groups: newGroups, isEmpty: false });
-            } else {
-                preservedLines.push({
-                    groups: existingGroups.map(g => ({
-                        words: [...g.words],
-                        note: g.note
-                    })),
-                    isEmpty: false
-                });
             }
+
+            if (wordIdx < newLineWords.length) {
+                const remaining = newLineWords.slice(wordIdx);
+                for (const w of remaining) {
+                    let foundNote = null;
+                    for (const oldGroup of existingGroups) {
+                        if (oldGroup.words.includes(w) && oldGroup.words.indexOf(w) === 0) {
+                            foundNote = oldGroup.note;
+                            break;
+                        }
+                    }
+                    newGroups.push({
+                        words: [w],
+                        note: foundNote
+                    });
+                }
+            }
+
+            return newGroups;
+        }
+
+        return existingGroups.map(g => ({
+            words: [...g.words],
+            note: g.note
+        }));
+    }
+
+    function rebuildGroupsPreservingNotes(newText) {
+        const newLines = parseTextToLines(newText);
+
+        if (!state.lines || state.lines.length === 0) {
+            state.lines = newLines.map(line => {
+                if (isLineEmpty(line)) {
+                    return { groups: [], isEmpty: true, collapsed: false };
+                }
+                return {
+                    groups: mergePunctuation(wordsFromLine(line)).map(w => ({
+                        words: [w],
+                        note: null
+                    })),
+                    isEmpty: false,
+                    collapsed: false
+                };
+            });
+            return;
+        }
+
+        const preservedLines = [];
+
+        for (let li = 0; li < newLines.length; li++) {
+            const newLine = newLines[li];
+            const existingLine = state.lines[li];
+            const prevCollapsed = existingLine ? !!existingLine.collapsed : false;
+
+            if (isLineEmpty(newLine)) {
+                preservedLines.push({ groups: [], isEmpty: true, collapsed: prevCollapsed });
+                continue;
+            }
+
+            const existingGroups = (existingLine && !existingLine.isEmpty) ? existingLine.groups : [];
+            const newGroups = computeGroupsForLineText(newLine, existingGroups);
+
+            preservedLines.push({ groups: newGroups, isEmpty: false, collapsed: prevCollapsed });
         }
 
         state.lines = preservedLines;
+    }
+
+    // Updates one line's state and its visible groups immediately while the
+    // user is typing. The line input itself is NOT re-rendered, so focus and
+    // cursor position are preserved.
+    function handleLineTextLiveEdit(lineIdx, newLineText) {
+        const line = state.lines[lineIdx];
+        if (!line) return;
+
+        if (isLineEmpty(newLineText)) {
+            state.lines[lineIdx] = {
+                groups: [],
+                isEmpty: true,
+                collapsed: line.collapsed
+            };
+        } else {
+            const existingGroups = line.isEmpty ? [] : line.groups;
+            const newGroups = computeGroupsForLineText(newLineText, existingGroups);
+            state.lines[lineIdx] = {
+                groups: newGroups,
+                isEmpty: false,
+                collapsed: line.collapsed
+            };
+        }
+
+        updateTextareaFromState();
+        updateLineGroupsDOM(lineIdx);
+    }
+
+    // Refresh only the visual parts of one line block. This avoids destroying
+    // and recreating the text input on every keystroke.
+    function updateLineGroupsDOM(lineIdx) {
+        const line = state.lines[lineIdx];
+        if (!line) return;
+
+        const lineBlock = groupsContainer.querySelector(`.line-block[data-line=\"${lineIdx}\"]`);
+        if (!lineBlock) {
+            renderGroups();
+            return;
+        }
+
+        const lineText = line.isEmpty ? '' : line.groups.flatMap(g => g.words).join(' ');
+        const preview = lineBlock.querySelector('.line-preview');
+        if (preview) preview.textContent = lineText;
+
+        const body = lineBlock.querySelector('.line-block-body');
+        if (!body) return;
+
+        let chips = body.querySelector('.chips');
+
+        if (!line.groups.length) {
+            if (chips) chips.remove();
+            return;
+        }
+
+        if (!chips) {
+            chips = document.createElement('div');
+            chips.className = 'chips';
+            body.appendChild(chips);
+        }
+
+        let html = '';
+        for (let gi = 0; gi < line.groups.length; gi++) {
+            const group = line.groups[gi];
+            const displayText = group.words.join(' ');
+            const note = group.note;
+            const hasNote = note !== null;
+            const isLastInLine = gi === line.groups.length - 1;
+
+            html += `<div class=\"chip\" data-line=\"${lineIdx}\" data-group=\"${gi}\">`;
+            html += `<span class=\"text\">${escapeHtml(displayText)}</span>`;
+            const noteDisplay = hasNote ? note.replace(/\d/, '') : '♩';
+            html += `<span class=\"note-badge ${hasNote ? 'has-note' : ''}\" title=\"${hasNote ? escapeHtml(note) : 'Тап на слово, щоб вибрати ноту'}\">${noteDisplay}</span>`;
+
+            if (!isLastInLine) {
+                html += `<button class=\"action-btn merge-btn\" data-action=\"merge\" data-line=\"${lineIdx}\" data-group=\"${gi}\" title=\"Об'єднати з наступною групою\">+</button>`;
+            }
+            if (group.words.length > 1) {
+                html += `<button class=\"action-btn split-btn\" data-action=\"split\" data-line=\"${lineIdx}\" data-group=\"${gi}\" title=\"Відокремити останнє слово\">✂️</button>`;
+            }
+            html += `</div>`;
+        }
+        chips.innerHTML = html;
+
+        chips.querySelectorAll('.chip').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                if (e.target.closest('.action-btn')) return;
+                openNotePopup(parseInt(chip.dataset.line), parseInt(chip.dataset.group));
+            });
+        });
+        chips.querySelectorAll('[data-action=\"merge\"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                mergeGroupWithNext(parseInt(btn.dataset.line), parseInt(btn.dataset.group));
+            });
+        });
+        chips.querySelectorAll('[data-action=\"split\"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                splitGroup(parseInt(btn.dataset.line), parseInt(btn.dataset.group));
+            });
+        });
+
+        groupCount.textContent = `${state.lines.reduce((sum, currentLine) => sum + (currentLine.isEmpty ? 0 : currentLine.groups.length), 0)} груп`;
+    }
+
+    // Applies an edit made directly in a single line block's own text field:
+    // recomputes that line's groups (preserving matching notes) without
+    // touching any other line.
+    function handleLineTextCommit(lineIdx, newLineText) {
+        const line = state.lines[lineIdx];
+        if (!line) return;
+
+        const currentLineText = line.isEmpty ? '' : line.groups.flatMap(g => g.words).join(' ');
+        if (newLineText.trim() === currentLineText.trim()) return;
+
+        if (isLineEmpty(newLineText)) {
+            state.lines[lineIdx] = { groups: [], isEmpty: true, collapsed: line.collapsed };
+        } else {
+            const existingGroups = line.isEmpty ? [] : line.groups;
+            const newGroups = computeGroupsForLineText(newLineText, existingGroups);
+            state.lines[lineIdx] = { groups: newGroups, isEmpty: false, collapsed: line.collapsed };
+        }
+
+        updateTextareaFromState();
+        renderAll();
+    }
+
+    function toggleLineCollapsed(lineIdx) {
+        const line = state.lines[lineIdx];
+        if (!line) return;
+        line.collapsed = !line.collapsed;
+        renderAll();
     }
 
     // ============================================================
@@ -1725,14 +2014,15 @@
         const lines = parseTextToLines(text);
         state.lines = lines.map(line => {
             if (isLineEmpty(line)) {
-                return { groups: [], isEmpty: true };
+                return { groups: [], isEmpty: true, collapsed: false };
             }
             return {
                 groups: mergePunctuation(wordsFromLine(line)).map(w => ({
                     words: [w],
                     note: null
                 })),
-                isEmpty: false
+                isEmpty: false,
+                collapsed: false
             };
         });
         renderAll();
@@ -1765,41 +2055,53 @@
         let html = '';
         for (let li = 0; li < state.lines.length; li++) {
             const line = state.lines[li];
-            
+
             if (line.isEmpty) {
-                html += `<div class="line-group empty-line"></div>`;
+                html += `<div class="line-block-empty"></div>`;
                 continue;
             }
-            
-            if (!line.groups.length) continue;
+
             totalGroups += line.groups.length;
+            const lineText = line.groups.flatMap(g => g.words).join(' ');
+            const collapsedClass = line.collapsed ? ' collapsed' : '';
 
-            html += `<div class="line-group">`;
-            html += `<span class="line-label">${li + 1}</span>`;
-            html += `<div class="chips">`;
+            html += `<div class="line-block${collapsedClass}" data-line="${li}">`;
 
-            for (let gi = 0; gi < line.groups.length; gi++) {
-                const group = line.groups[gi];
-                const words = group.words;
-                const note = group.note;
-                const displayText = words.join(' ');
-                const hasNote = note !== null;
-                const isLastInLine = gi === line.groups.length - 1;
+            html += `<div class="line-block-header" data-line="${li}">`;
+            html += `<button class="collapse-toggle" type="button" tabindex="-1" title="Згорнути/розгорнути рядок">▾</button>`;
+            html += `<span class="line-number">${li + 1}</span>`;
+            html += `<span class="line-preview">${escapeHtml(lineText)}</span>`;
+            html += `</div>`;
 
-                html += `<div class="chip" data-line="${li}" data-group="${gi}">`;
-                html += `<span class="text">${escapeHtml(displayText)}</span>`;
+            html += `<div class="line-block-body">`;
+            html += `<input type="text" class="line-text-input" data-line="${li}" placeholder="Текст рядка">`;
 
-                const noteDisplay = hasNote ? note.replace(/\d/, '') : '♩';
-                html += `<span class="note-badge ${hasNote ? 'has-note' : ''}" title="${hasNote ? note : 'Тап на слово, щоб вибрати ноту'}">${noteDisplay}</span>`;
+            if (line.groups.length) {
+                html += `<div class="chips">`;
+                for (let gi = 0; gi < line.groups.length; gi++) {
+                    const group = line.groups[gi];
+                    const words = group.words;
+                    const note = group.note;
+                    const displayText = words.join(' ');
+                    const hasNote = note !== null;
+                    const isLastInLine = gi === line.groups.length - 1;
 
-                if (!isLastInLine) {
-                    html += `<button class="action-btn merge-btn" data-action="merge" data-line="${li}" data-group="${gi}" title="Об'єднати з наступною групою">+</button>`;
+                    html += `<div class="chip" data-line="${li}" data-group="${gi}">`;
+                    html += `<span class="text">${escapeHtml(displayText)}</span>`;
+
+                    const noteDisplay = hasNote ? note.replace(/\d/, '') : '♩';
+                    html += `<span class="note-badge ${hasNote ? 'has-note' : ''}" title="${hasNote ? note : 'Тап на слово, щоб вибрати ноту'}">${noteDisplay}</span>`;
+
+                    if (!isLastInLine) {
+                        html += `<button class="action-btn merge-btn" data-action="merge" data-line="${li}" data-group="${gi}" title="Об'єднати з наступною групою">+</button>`;
+                    }
+
+                    if (group.words.length > 1) {
+                        html += `<button class="action-btn split-btn" data-action="split" data-line="${li}" data-group="${gi}" title="Відокремити останнє слово">✂️</button>`;
+                    }
+
+                    html += `</div>`;
                 }
-
-                if (group.words.length > 1) {
-                    html += `<button class="action-btn split-btn" data-action="split" data-line="${li}" data-group="${gi}" title="Відокремити останнє слово">✂️</button>`;
-                }
-
                 html += `</div>`;
             }
 
@@ -1808,6 +2110,49 @@
 
         container.innerHTML = html;
         groupCount.textContent = `${totalGroups} груп`;
+
+        // Values are assigned via JS (not baked into the HTML string) so line
+        // text containing quotes/special characters can never break the markup.
+        container.querySelectorAll('.line-text-input').forEach(input => {
+            const li = parseInt(input.dataset.line);
+            const line = state.lines[li];
+            input.value = (line && !line.isEmpty) ? line.groups.flatMap(g => g.words).join(' ') : '';
+
+            // Update groups immediately while typing. Only the groups/preview
+            // DOM is refreshed, so this input keeps focus and its caret position.
+            input.addEventListener('input', () => {
+                let newText = removeLatin(input.value);
+
+                if (input.value !== newText) {
+                    const start = input.selectionStart;
+                    const cleanedPrefix = cleanLyricsText(input.value.slice(0, start));
+                    const newCursorPosition = cleanedPrefix.length;
+
+                    input.value = newText;
+                    input.setSelectionRange(newCursorPosition, newCursorPosition);
+                }
+
+                handleLineTextLiveEdit(li, input.value);
+            });
+
+            input.addEventListener('blur', () => {
+                handleLineTextCommit(li, input.value);
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    input.blur();
+                }
+            });
+            input.addEventListener('click', (e) => e.stopPropagation());
+        });
+
+        container.querySelectorAll('.line-block-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const li = parseInt(header.dataset.line);
+                toggleLineCollapsed(li);
+            });
+        });
 
         container.querySelectorAll('.chip').forEach(chip => {
             chip.addEventListener('click', (e) => {
@@ -2027,14 +2372,15 @@
         lyricsInput.value = data.t;
         state.lines = data.g.map(lineData => {
             if (lineData === null) {
-                return { groups: [], isEmpty: true };
+                return { groups: [], isEmpty: true, collapsed: false };
             }
             return {
                 groups: lineData.map(g => ({
                     words: g.w,
                     note: g.n
                 })),
-                isEmpty: false
+                isEmpty: false,
+                collapsed: false
             };
         });
         renderAll();
@@ -2237,21 +2583,24 @@
         });
 
         lyricsInput.addEventListener('input', () => {
-            clearTimeout(state.debounceTimer);
-            state.debounceTimer = setTimeout(() => {
-                const newText = lyricsInput.value;
-                const newLines = parseTextToLines(newText);
+            let cleanedText = removeLatin(lyricsInput.value);
+
+            // Filter Latin letters immediately, including pasted text, while
+            // preserving the caret position as much as possible.
+            if (lyricsInput.value !== cleanedText) {
+                const start = lyricsInput.selectionStart;
+                const cleanedPrefix = cleanLyricsText(lyricsInput.value.slice(0, start));
+                const newCursorPosition = cleanedPrefix.length;
+
+                lyricsInput.value = cleanedText;
                 
-                const currentText = state.lines.map(line => {
-                    if (line.isEmpty) return '';
-                    return line.groups.flatMap(g => g.words).join(' ');
-                }).join('\n');
-                
-                if (newText.trim() !== currentText.trim()) {
-                    rebuildGroupsPreservingNotes(newText);
-                    renderAll();
-                }
-            }, 300);
+                lyricsInput.setSelectionRange(newCursorPosition, newCursorPosition);
+            }
+
+            // Rebuild immediately so every edit in the main text field is
+            // reflected in the line/group blocks without the old 300 ms delay.
+            rebuildGroupsPreservingNotes(lyricsInput.value);
+            renderAll();
         });
 
         tabBtns.forEach(btn => {
